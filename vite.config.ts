@@ -16,6 +16,8 @@ import Shiki from '@shikijs/markdown-it'
 import WebfontDownload from 'vite-plugin-webfont-dl'
 import VueRouter from 'unplugin-vue-router/vite'
 import { VueRouterAutoImports } from 'unplugin-vue-router'
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
+import vueJsx from '@vitejs/plugin-vue-jsx'
 
 export default defineConfig({
   resolve: {
@@ -29,13 +31,20 @@ export default defineConfig({
       plugins: {
         vue: Vue({
           include: [/\.vue$/, /\.md$/],
+          script: {
+            babelParserPlugins: ['decorators'],
+          },
+        }),
+        vueJsx: vueJsx({
+          include: [/\.tsx$/],
+          babelPlugins: [['@babel/plugin-proposal-decorators', { version: '2023-05' }]],
         }),
       },
     }),
 
     // https://github.com/posva/unplugin-vue-router
     VueRouter({
-      extensions: ['.vue', '.md'],
+      extensions: ['.vue', '.md', '.tsx'],
       dts: 'src/typed-router.d.ts',
     }),
 
@@ -54,6 +63,14 @@ export default defineConfig({
           // add any other imports you were relying on
           'vue-router/auto': ['useLink'],
         },
+        {
+          'naive-ui': [
+            'useDialog',
+            'useMessage',
+            'useNotification',
+            'useLoadingBar',
+          ],
+        },
       ],
       dts: 'src/auto-imports.d.ts',
       dirs: [
@@ -66,10 +83,11 @@ export default defineConfig({
     // https://github.com/antfu/unplugin-vue-components
     Components({
       // allow auto load markdown components under `./src/components/`
-      extensions: ['vue', 'md'],
+      extensions: ['vue', 'md', 'tsx'],
       // allow auto import and register components used in markdown
-      include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
+      include: [/\.vue$/, /\.vue\?vue/, /\.md$/, /\.tsx$/],
       dts: 'src/components.d.ts',
+      resolvers: [NaiveUiResolver()],
     }),
 
     // https://github.com/antfu/unocss
@@ -164,5 +182,9 @@ export default defineConfig({
   ssr: {
     // TODO: workaround until they support native ESM
     noExternal: ['workbox-window', /vue-i18n/],
+  },
+
+  server: {
+    host: '0.0.0.0',
   },
 })
